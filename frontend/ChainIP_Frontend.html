@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChainIP — Blockchain IP Protection</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔐</div>
+    <h1>Chain<span>IP</span></h1>
+  </div>
+  <div id="walletSection">
+    <button class="connect-btn" onclick="connectWallet()">🦊 Connect MetaMask</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</div>
+  <div class="tab" onclick="switchTab('register')">📝 Register IP</div>
+  <div class="tab" onclick="switchTab('mylicenses')">📜 Licenses</div>
+  <div class="tab" onclick="switchTab('verify')">🔍 Verify IP</div>
+  <div class="tab" onclick="switchTab('dispute')">⚖️ Dispute</div>
+</div>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <div class="panel active" id="panel-dashboard">
+    <div id="dashContent">
+      <div class="not-connected">
+        <div class="big-icon">⛓️</div>
+        <h3>Connect Your Wallet</h3>
+        <p>Connect MetaMask to view your IP portfolio on the blockchain</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="panel" id="panel-register">
+    <div class="section-header">
+      <h2>Register Intellectual Property</h2>
+      <p>Your IP will be hashed and recorded immutably on the blockchain</p>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>IP Title *</label>
+        <input type="text" id="reg-title" placeholder="e.g. My Novel Algorithm"/>
+      </div>
+      <div class="form-group">
+        <label>IP Type *</label>
+        <select id="reg-type">
+          <option value="0">🔬 Patent</option>
+          <option value="1">©️ Copyright</option>
+          <option value="2">™️ Trademark</option>
+          <option value="3">🔒 Trade Secret</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Description *</label>
+        <textarea id="reg-desc" placeholder="Describe your intellectual property in detail..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Upload File to Generate Hash (or enter manually)</label>
+        <input type="file" id="reg-file" onchange="generateHash()" accept="*/*"/>
+        <div id="hashDisplay"></div>
+        <div class="hash-preview" id="hashDisplay">SHA-256 hash will appear here after file upload...</div>
+        <input type="text" id="reg-hash" placeholder="Or paste your SHA-256 hash manually" style="margin-top:8px"/>
+      </div>
+      <div class="form-group">
+        <label>Expiry Date (leave blank = no expiry)</label>
+        <input type="date" id="reg-expiry"/>
+      </div>
+      <div class="form-group">
+        <label>Transferable?</label>
+        <select id="reg-transferable">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <hr class="divider"/>
+    <button class="btn btn-primary" onclick="registerIP()" id="regBtn">
+      🔗 Register on Blockchain (0.001 ETH)
+    </button>
+    <div id="reg-result"></div>
+  </div>
+
+  <!-- LICENSES -->
+  <div class="panel" id="panel-mylicenses">
+    <div class="section-header">
+      <h2>License Management</h2>
+      <p>Issue licenses for IPs you own</p>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>IP ID *</label>
+        <input type="number" id="lic-ipid" placeholder="IP ID to license"/>
+      </div>
+      <div class="form-group">
+        <label>Licensee Address *</label>
+        <input type="text" id="lic-addr" placeholder="0x..."/>
+      </div>
+      <div class="form-group">
+        <label>License Type</label>
+        <select id="lic-type">
+          <option value="0">Exclusive</option>
+          <option value="1">Non-Exclusive</option>
+          <option value="2">Sublicensable</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Royalty % (0-100)</label>
+        <input type="number" id="lic-royalty" placeholder="5" min="0" max="100"/>
+      </div>
+      <div class="form-group">
+        <label>License Expiry (blank = perpetual)</label>
+        <input type="date" id="lic-expiry"/>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="issueLicense()" style="margin-top:16px">
+      📜 Issue License (0.0005 ETH)
+    </button>
+    <div id="lic-result"></div>
+    <hr class="divider"/>
+    <h3 style="margin-bottom:12px; font-size:16px">Revoke a License</h3>
+    <div style="display:flex; gap:12px; align-items:flex-end">
+      <div class="form-group" style="flex:1">
+        <label>License ID</label>
+        <input type="number" id="rev-licid" placeholder="License ID to revoke"/>
+      </div>
+      <button class="btn btn-danger" onclick="revokeLicense()">Revoke</button>
+    </div>
+    <div id="rev-result"></div>
+  </div>
+
+  <!-- VERIFY -->
+  <div class="panel" id="panel-verify">
+    <div class="section-header">
+      <h2>Verify IP Ownership</h2>
+      <p>Upload a file or enter a hash to verify if it's registered on-chain</p>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Upload File to Verify</label>
+        <input type="file" id="ver-file" onchange="generateVerifyHash()"/>
+        <div class="hash-preview" id="verHashDisplay">Hash will appear here...</div>
+      </div>
+      <div class="form-group full">
+        <label>Or enter SHA-256 hash manually</label>
+        <input type="text" id="ver-hash" placeholder="Enter content hash..."/>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="verifyIP()" style="margin-top:16px">🔍 Verify on Blockchain</button>
+    <div id="ver-result"></div>
+    <hr class="divider"/>
+    <h3 style="margin-bottom:12px; font-size:16px">Lookup IP by ID</h3>
+    <div style="display:flex; gap:12px; align-items:flex-end">
+      <div class="form-group" style="flex:1">
+        <label>IP ID</label>
+        <input type="number" id="lookup-id" placeholder="e.g. 1"/>
+      </div>
+      <button class="btn btn-secondary" onclick="lookupIP()">Lookup</button>
+    </div>
+    <div id="lookup-result"></div>
+  </div>
+
+  <!-- DISPUTE -->
+  <div class="panel" id="panel-dispute">
+    <div class="section-header">
+      <h2>Raise a Dispute</h2>
+      <p>Challenge ownership of an IP with on-chain evidence</p>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>IP ID to Dispute *</label>
+        <input type="number" id="disp-ipid" placeholder="IP ID"/>
+      </div>
+      <div class="form-group full">
+        <label>Evidence (IPFS CID or description) *</label>
+        <textarea id="disp-evidence" placeholder="Provide your evidence for the dispute..."></textarea>
+      </div>
+    </div>
+    <button class="btn btn-danger" onclick="raiseDispute()" style="margin-top:16px">⚖️ Raise Dispute</button>
+    <div id="disp-result"></div>
+  </div>
+
+</main>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────
+//  CONTRACT CONFIG — Replace with your deployed address
+// ─────────────────────────────────────────────────────────────────────
+const CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"; // Update this to your deployed contract address
+
+const ABI = [
+  "function registerIP(string,string,string,uint8,uint256,bool) payable returns (uint256)",
+  "function transferIP(uint256,address) external",
+  "function issueLicense(uint256,address,uint8,uint256,uint256) payable returns (uint256)",
+  "function revokeLicense(uint256) external",
+  "function raiseDispute(uint256,string) external",
+  "function getIPRecord(uint256) view returns (tuple(uint256 id,address owner,string title,string description,string contentHash,uint8 ipType,uint8 status,uint256 registrationTime,uint256 expiryTime,bool transferable))",
+  "function getOwnerIPs(address) view returns (uint256[])",
+  "function verifyIPByHash(string) view returns (bool,uint256)",
+  "function getTotalIPs() view returns (uint256)",
+  "function isLicenseValid(uint256) view returns (bool)",
+  "function registrationFee() view returns (uint256)",
+  "function licenseFee() view returns (uint256)"
+];
+
+let provider, signer, contract, userAddress;
+
+// 🔥 ADD HERE
+async function generateHash(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+  return hashHex;
+}
+
+// 🔥 ROLE CONFIGURATION
+const ROLES = {
+  ADMIN: [
+    "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  ],
+  VERIFIER: [
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+  ],
+  CREATOR: [
+    "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+  ]
+};
+
+function getUserRole(address) {
+  if (!address) return "Public User";
+
+  if (ROLES.ADMIN.includes(address)) return "Admin";
+  if (ROLES.VERIFIER.includes(address)) return "Verifier";
+  if (ROLES.CREATOR.includes(address)) return "Creator";
+
+  return "Public User";
+}
+
+const IP_TYPES = ["Patent", "Copyright", "Trademark", "Trade Secret"];
+const IP_STATUSES = ["Active", "Transferred", "Disputed", "Revoked"];
+const LIC_TYPES = ["Exclusive", "Non-Exclusive", "Sublicensable"];
+
+// ─────────────────────────────────────────────────────────────────────
+//  WALLET CONNECTION
+// ─────────────────────────────────────────────────────────────────────
+async function connectWallet() {
+  if (!window.ethereum) {
+    showGlobalAlert("MetaMask is not installed! Please install it from metamask.io", "error");
+    return;
+  }
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+    contract = new ethers.Contract(CONTRACT_ADDRESS.trim(), ABI, signer);
+
+    // ✅ ONLY ONE UI (removed duplicate overwrite)
+    const role = getUserRole(userAddress);
+
+    document.getElementById('walletSection').innerHTML = `
+      <div class="wallet-info">
+        <div class="dot"></div>
+        <span class="role-badge">${role}</span>
+        <div class="addr">${userAddress.slice(0,6)}...${userAddress.slice(-4)}</div>
+        <button class="connect-btn" onclick="disconnectWallet()">Disconnect</button>
+      </div>`;
+
+    loadMergedDashboard();
+  } catch (e) {
+    showGlobalAlert("Could not connect: " + e.message, "error");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  DASHBOARD
+// ─────────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  if (!contract || !userAddress) {
+  return;
+}
+
+  const dash = document.getElementById('dashContent');
+  dash.innerHTML = '<div class="alert alert-info">⌛ Loading your IP portfolio...</div>';
+  try {
+    const totalIPs = await contract.getTotalIPs();
+    const myIpIds = await contract.getOwnerIPs(userAddress);
+
+    let cards = '';
+    for (const id of myIpIds) {
+      const ip = await contract.getIPRecord(id);
+      const ts = new Date(ip.registrationTime.toNumber() * 1000).toLocaleDateString();
+      cards += `
+        <div class="ip-card">
+          <div class="ip-card-header">
+            <div class="ip-title">${ip.title}</div>
+            <span class="ip-type-badge">${IP_TYPES[ip.ipType]}</span>
+          </div>
+          <div class="ip-hash">🔗 Hash: ${ip.contentHash.slice(0,40)}...</div>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px">${ip.description.slice(0,120)}${ip.description.length>120?'...':''}</p>
+          <div class="ip-meta">
+            <span>📅 ${ts}</span>
+            <span>🆔 ID: ${ip.id.toString()}</span>
+          </div>
+          <span class="status-badge status-${IP_STATUSES[ip.status]}">${IP_STATUSES[ip.status]}</span>
+        </div>`;
+    }
+
+    dash.innerHTML = `
+      <div class="stats-bar">
+        <div class="stat-card"><div class="stat-num">${totalIPs.toString()}</div><div class="stat-label">Total IPs on Chain</div></div>
+        <div class="stat-card"><div class="stat-num">${myIpIds.length}</div><div class="stat-label">Your Registered IPs</div></div>
+        <div class="stat-card"><div class="stat-num">🔗</div><div class="stat-label">Sepolia Testnet</div></div>
+        <div class="stat-card"><div class="stat-num">✅</div><div class="stat-label">Wallet Connected</div></div>
+      </div>
+      <div class="section-header">
+        <h2>My IP Portfolio</h2>
+        <p>All intellectual properties registered under your address</p>
+      </div>
+      ${myIpIds.length === 0
+        ? '<div class="alert alert-info">📭 No IPs registered yet. Go to the Register tab to add your first IP!</div>'
+        : `<div class="ip-grid">${cards}</div>`
+      }`;
+  } catch (e) {
+    dash.innerHTML = `<div class="alert alert-error">❌ ${e.message}</div>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// loadMergedDashboard
+// ─────────────────────────────────────────────────────────────────────
+
+async function loadMergedDashboard() {
+  if (!contract || !userAddress) return;
+
+  const dash = document.getElementById('dashContent');
+  dash.innerHTML = "⏳ Loading...";
+
+  try {
+    // 🔗 Blockchain data
+    const ids = await contract.getOwnerIPs(userAddress);
+
+    // 🌐 Backend data
+    const res = await fetch("http://localhost:5000/api/ip");
+    const dbData = await res.json();
+
+    let html = "";
+
+    for (let id of ids) {
+      const ip = await contract.ips(id);
+
+      // find matching DB record
+      const meta = dbData.find(x => x.ipId == id);
+
+      html += `
+        <div class="ip-card">
+          <h3>${meta?.title || "Untitled"}</h3>
+          <p>${meta?.description || "No description"}</p>
+          <p><b>ID:</b> ${id}</p>
+          <p><b>Status:</b> ${ip.status}</p>
+        </div>
+      `;
+    }
+
+    dash.innerHTML = html || "No IPs found";
+
+  } catch (e) {
+    dash.innerHTML = "❌ Error loading dashboard";
+    console.error(e);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  REGISTER IP
+// ─────────────────────────────────────────────────────────────────────
+async function registerIP() {
+  requireWallet();
+
+  const role = getUserRole(userAddress);
+  if (role !== "Creator") {
+    alert("Only Creators can register IP");
+    return;
+  }
+
+  const title = document.getElementById('reg-title').value.trim();
+  const desc = document.getElementById('reg-desc').value.trim();
+  const fileHash = document.getElementById('reg-hash').value.trim() ||
+                   document.getElementById('hashDisplay').dataset.hash || '';
+
+  if (!title || !desc || !fileHash) {
+    showResult('reg-result', "Please fill in Title, Description, and Content Hash", "error");
+    return;
+  }
+
+  const btn = document.getElementById('regBtn');
+  btn.innerHTML = '<span class="spinner"></span> Registering...';
+  btn.disabled = true;
+
+  try {
+    // 🔥 FIX 1: Use correct variable (fileHash)
+    // 🔥 FIX 2: Match contract (only 2 params)
+      if (!fileHash) {
+    alert("Hash not generated. Please upload file or enter hash.");
+    return;
+  }
+    const tx = await contract.registerIP(fileHash, desc);
+
+    showResult('reg-result', `⏳ Transaction sent! Hash: <code>${tx.hash}</code>`, "info");
+
+    const receipt = await tx.wait();
+        // 🔥 Extract ipId from event
+    let ipId = null;
+
+    for (const event of receipt.events) {
+      if (event.event === "IPRegistered") {
+        ipId = event.args.id.toNumber();
+        break;
+      }
+    }
+
+console.log("Real IP ID:", ipId);
+
+    showResult('reg-result', `✅ IP Registered on blockchain! TX: <code>${tx.hash}</code>`, "success");
+
+    // 🔥 FIX 3: Save to backend (MongoDB)
+    await fetch("http://localhost:5000/api/ip/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ipId: ipId, // temporary ID
+        owner: userAddress,
+        title: title,
+        description: desc,
+        hash: fileHash,
+        status: "Pending"
+      })
+    });
+
+    loadMergedDashboard();
+
+  } catch (e) {
+    showResult('reg-result', "❌ " + (e.reason || e.message), "error");
+  } finally {
+    btn.innerHTML = '🔗 Register on Blockchain';
+    btn.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  ISSUE LICENSE
+// ─────────────────────────────────────────────────────────────────────
+async function issueLicense() {
+  requireWallet();
+  const ipId = document.getElementById('lic-ipid').value;
+  const licensee = document.getElementById('lic-addr').value.trim();
+
+  // ✅ ADDED VALIDATION
+  if (!ethers.utils.isAddress(licensee)) {
+    alert("Invalid licensee address");
+    return;
+  }
+
+  const licType = parseInt(document.getElementById('lic-type').value);
+  const royaltyRaw = parseFloat(document.getElementById('lic-royalty').value || '0');
+  const royalty = Math.round(royaltyRaw * 100);
+  const expiryVal = document.getElementById('lic-expiry').value;
+  const expiryTs = expiryVal ? Math.floor(new Date(expiryVal).getTime()/1000) : 0;
+
+  if (!ipId || !licensee) {
+    showResult('lic-result', "Fill in IP ID and Licensee address", "error");
+    return;
+  }
+
+  try {
+    const fee = await contract.licenseFee();
+    const tx = await contract.issueLicense(ipId, licensee, licType, expiryTs, royalty, { value: fee });
+    showResult('lic-result', `⏳ Issuing license...`, "info");
+    await tx.wait();
+    showResult('lic-result', `✅ License issued! TX: <code>${tx.hash}</code>`, "success");
+  } catch(e) {
+    showResult('lic-result', "❌ " + (e.reason || e.message), "error");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  REVOKE LICENSE
+// ─────────────────────────────────────────────────────────────────────
+async function revokeLicense() {
+  requireWallet();
+  const licId = document.getElementById('rev-licid').value;
+  if (!licId) { showResult('rev-result', "Enter a license ID", "error"); return; }
+  try {
+    const tx = await contract.revokeLicense(licId);
+    showResult('rev-result', `⏳ Revoking...`, "info");
+    await tx.wait();
+    showResult('rev-result', `✅ License ${licId} revoked!`, "success");
+  } catch(e) {
+    showResult('rev-result', "❌ " + (e.reason || e.message), "error");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  VERIFY IP
+// ─────────────────────────────────────────────────────────────────────
+async function verifyIP() {
+  requireWallet();
+  if (getUserRole(userAddress) !== "Verifier") {
+  alert("Only Verifiers allowed");
+  return;
+}
+  const hash = document.getElementById('ver-hash').value.trim() ||
+               document.getElementById('verHashDisplay').dataset.hash || '';
+  if (!hash) { showResult('ver-result', "Enter a hash to verify", "error"); return; }
+
+  try {
+    const [exists, ipId] = await contract.verifyIPByHash(hash);
+    if (exists) {
+      const ip = await contract.getIPRecord(ipId);
+      const ts = new Date(ip.registrationTime.toNumber() * 1000).toLocaleString();
+      document.getElementById('ver-result').innerHTML = `
+        <div class="verify-result">
+          <div class="alert alert-success">✅ IP FOUND on blockchain!</div>
+          <div style="margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:12px">
+            <div><label>Title</label><div style="font-weight:600">${ip.title}</div></div>
+            <div><label>Type</label><div>${IP_TYPES[ip.ipType]}</div></div>
+            <div><label>Owner</label><div style="font-family:monospace;font-size:12px">${ip.owner}</div></div>
+            <div><label>Registered</label><div>${ts}</div></div>
+            <div style="grid-column:1/-1"><label>Status</label><span class="status-badge status-${IP_STATUSES[ip.status]}">${IP_STATUSES[ip.status]}</span></div>
+          </div>
+        </div>`;
+    } else {
+      showResult('ver-result', "❌ No IP found with this hash — it is NOT registered on-chain", "error");
+    }
+  } catch(e) {
+    showResult('ver-result', "❌ " + e.message, "error");
+  }
+}
+
+async function lookupIP() {
+  requireWallet();
+  const id = document.getElementById('lookup-id').value;
+  if (!id) return;
+  try {
+    const ip = await contract.getIPRecord(id);
+    const ts = new Date(ip.registrationTime.toNumber() * 1000).toLocaleString();
+    document.getElementById('lookup-result').innerHTML = `
+      <div class="verify-result">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px">
+          <div><label>Title</label><div style="font-weight:600">${ip.title}</div></div>
+          <div><label>Type</label><div>${IP_TYPES[ip.ipType]}</div></div>
+          <div style="grid-column:1/-1"><label>Owner</label><div style="font-family:monospace;font-size:12px">${ip.owner}</div></div>
+          <div><label>Registered</label><div>${ts}</div></div>
+          <div><label>Hash</label><div style="font-family:monospace;font-size:11px;word-break:break-all">${ip.contentHash}</div></div>
+          <div><label>Status</label><span class="status-badge status-${IP_STATUSES[ip.status]}">${IP_STATUSES[ip.status]}</span></div>
+        </div>
+      </div>`;
+  } catch(e) {
+    showResult('lookup-result', "❌ " + e.message, "error");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  DISPUTE
+// ─────────────────────────────────────────────────────────────────────
+async function raiseDispute() {
+  requireWallet();
+  const ipId = document.getElementById('disp-ipid').value;
+  const evidence = document.getElementById('disp-evidence').value.trim();
+  if (!ipId || !evidence) { showResult('disp-result', "Fill in IP ID and evidence", "error"); return; }
+  try {
+    const tx = await contract.raiseDispute(ipId, evidence);
+    showResult('disp-result', `⏳ Submitting dispute...`, "info");
+    await tx.wait();
+    showResult('disp-result', `✅ Dispute raised! The IP is now marked as Disputed.`, "success");
+  } catch(e) {
+    showResult('disp-result', "❌ " + (e.reason || e.message), "error");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  HASH GENERATION (browser-native SubtleCrypto)
+// ─────────────────────────────────────────────────────────────────────
+async function generateHash() {
+  const file = document.getElementById('reg-file').files[0];
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  const hashHex = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  document.getElementById('hashDisplay').textContent = hashHex;
+  document.getElementById('hashDisplay').dataset.hash = hashHex;
+}
+
+async function generateVerifyHash() {
+  const file = document.getElementById('ver-file').files[0];
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  const hashHex = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  document.getElementById('verHashDisplay').textContent = hashHex;
+  document.getElementById('verHashDisplay').dataset.hash = hashHex;
+  document.getElementById('ver-hash').value = hashHex;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  UTILITIES
+// ─────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function showResult(id, msg, type) {
+  document.getElementById(id).innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+}
+
+function showGlobalAlert(msg, type) {
+  alert(msg);
+}
+
+function requireWallet() {
+  if (!signer) {
+    alert("Please connect your MetaMask wallet first!");
+    throw new Error("Wallet not connected");
+  }
+}
+
+function updateWalletUI() {
+  const role = getUserRole(userAddress);
+
+  document.getElementById('walletSection').innerHTML = `
+    <div class="wallet-info">
+      <div class="dot"></div>
+      <span class="role-badge role-${role.toLowerCase().replace(" ", "-")}">
+        ${role}
+      </span>
+      <div class="addr">${userAddress.slice(0,6)}...${userAddress.slice(-4)}</div>
+      <button class="connect-btn" onclick="disconnectWallet()">Disconnect</button>
+    </div>`;
+}
+
+function disconnectWallet() {
+  provider = null;
+  signer = null;
+  contract = null;
+  userAddress = null;
+
+  document.getElementById('walletSection').innerHTML = `
+    <button class="connect-btn" onclick="connectWallet()">🦊 Connect MetaMask</button>
+  `;
+
+  document.getElementById('dashContent').innerHTML = `
+    <div class="not-connected">
+      <div class="big-icon">⛓️</div>
+      <h3>Connect Your Wallet</h3>
+      <p>Connect MetaMask to view your IP portfolio on the blockchain</p>
+    </div>
+  `;
+}
+
+// 🔥 AUTO DISCONNECT ON ACCOUNT / NETWORK CHANGE
+if (window.ethereum) {
+  window.ethereum.on('accountsChanged', () => disconnectWallet());
+  window.ethereum.on('chainChanged', () => disconnectWallet());
+}
+
+// 🔥 ADD THIS AT VERY END
+document.getElementById("reg-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const hash = await generateHash(file);
+
+  // show hash in UI
+  document.getElementById("hashDisplay").innerText = hash;
+
+  // store hash for later use
+  document.getElementById("hashDisplay").dataset.hash = hash;
+});
+
+</script>
+</body>
+</html>

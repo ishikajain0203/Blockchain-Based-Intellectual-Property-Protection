@@ -1,0 +1,19 @@
+{
+  "name": "presentation",
+  "version": "1.0.0",
+  "description": "A full-stack decentralized application (DApp) for protecting and managing intellectual property on the Ethereum blockchain.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": {
+    "ethers": "^5.8.0"
+  }
+}
