@@ -118,6 +118,16 @@
       padding: 14px 18px; border-radius: 8px; font-size: 14px; margin-top: 16px;
       display: flex; align-items: center; gap: 10px;
     }
+
+    .role-badge{
+      background: rgba(99,102,241,0.15);
+      color: var(--accent2);
+      border: 1px solid rgba(99,102,241,0.3);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
     .alert-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
     .alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
     .alert-info { background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); color: var(--accent2); }
